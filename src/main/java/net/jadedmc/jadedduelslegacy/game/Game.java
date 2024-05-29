@@ -379,6 +379,8 @@ public class Game {
                 plugin.tournamentManager().broadcastMessage("&a&lTournament &8» &f" + winner.name() + " &ahas defeated &f" + loser.name() + " &7(&f" + winner.score() + " &8- &f" + loser.score() + "&7)&a.");
             }
 
+            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, this::saveGame);
+
             plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                 for(Player player : players()) {
                     if(gameType == GameType.TOURNAMENT) {
@@ -768,6 +770,7 @@ public class Game {
     }
 
     public void updateRedis() {
+        /*
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             List<String> jsonSpectators = new ArrayList<>();
             spectators.forEach(spectator -> jsonSpectators.add(spectator.toString()));
@@ -818,6 +821,63 @@ public class Game {
             // Update to redis.
             JadedAPI.getRedis().set("duels:legacy:games:" + nanoID, document.toJson());
         });
+
+         */
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            JadedAPI.getRedis().set("duels:legacy:games:" + nanoID, this.toDocument().toJson());
+        });
+    }
+
+    public Document toDocument() {
+        List<String> jsonSpectators = new ArrayList<>();
+        spectators.forEach(spectator -> jsonSpectators.add(spectator.toString()));
+
+        Document document = new Document()
+                .append("minigame", "DUELS_LEGACY")
+                .append("nanoID", nanoID.toString())
+                .append("kit", kit.id())
+                .append("arena", arena.fileName())
+                .append("type", gameType.toString())
+                .append("state", gameState.toString())
+                .append("server", JadedAPI.getCurrentInstance().getName())
+                .append("spectators", jsonSpectators);
+
+        if(gameType == GameType.TOURNAMENT) {
+            document.append("matchID", matchID);
+            document.append("tournamentURL", tournamentURL);
+        }
+
+        Document teamsDocument = new Document();
+        for(Team team : teamManager.teams()) {
+            Document teamDocument = new Document();
+            if(gameType == GameType.TOURNAMENT) {
+                teamDocument.append("teamID", team.challongeID());
+            }
+
+            List<String> uuids = new ArrayList<>();
+            List<String> usernames = new ArrayList<>();
+
+            for(UUID uuid : team.uuids()) {
+                uuids.add(uuid.toString());
+
+                Player player = Bukkit.getPlayer(uuid);
+
+                if(player == null || !player.isOnline()) {
+                    continue;
+                }
+
+                usernames.add(player.getName());
+            }
+
+            teamDocument.append("uuids", uuids);
+            teamDocument.append("usernames", usernames);
+            teamsDocument.append(team.teamColor().toString(), teamDocument);
+        }
+
+        document.append("teams", teamsDocument);
+
+        return document;
     }
 
     /**
@@ -834,5 +894,13 @@ public class Game {
 
     public void addSpectator(UUID uuid) {
         spectators.add(uuid);
+    }
+
+    public void saveGame() {
+        final Document document = this.toDocument();
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            JadedAPI.getMongoDB().client().getDatabase("network").getCollection("game_history").insertOne(document);
+        });
     }
 }

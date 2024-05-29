@@ -1,0 +1,37 @@
+name: JadedDuelsLegacy
+version: '${project.version}'
+main: net.jadedmc.jadedduelslegacy.JadedDuelsPlugin
+
+depend:
+  - JadedCore
+  - JadedChat
+  - PlaceholderAPI
+
+commands:
+  arena:
+    description: Runs the arena command.
+    permission: duels.admin
+  arenas:
+    description: View all currently loaded arenas.
+    permission: duels.admin
+  bracket:
+    description: View the current tournament bracket.
+  cancel:
+    description: Cancel a tournament.
+    permission: tournament.use
+  create:
+    description: create tournament.
+    permission: tournament.use
+  duel:
+    description: Duel another player.
+  event:
+    description: Join the tournament world.
+  leave:
+    description: Leave whatever you're currently in.
+    aliases: [l,lobby,hub]
+  spectate:
+    description: Open the spectate menu.
+    aliases: [spec,watch]
+  start:
+    description: start tournament.
+    permission: tournament.use

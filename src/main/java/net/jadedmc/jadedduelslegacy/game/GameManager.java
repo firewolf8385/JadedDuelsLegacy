@@ -9,6 +9,7 @@ import net.jadedmc.jadedduelslegacy.game.arena.Arena;
 import net.jadedmc.jadedduelslegacy.game.kit.Kit;
 import net.jadedmc.jadedduelslegacy.game.teams.TeamColor;
 import net.jadedmc.jadedutils.FileUtils;
+import net.jadedmc.nanoid.NanoID;
 import org.bson.Document;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -64,7 +65,7 @@ public class GameManager {
      */
     public void createGame(Arena arena, Kit kit, GameType gameType, int pointsNeeded, String tournamentURL, long matchID, long challongeID1, long challongeID2, List<UUID>... teams) {
         JadedAPI.getInstanceMonitor().getInstancesAsync().thenAccept(instances -> {
-            UUID gameUUID = UUID.randomUUID();
+            NanoID gameID = new NanoID();
 
             String serverName = "";
             {
@@ -104,7 +105,7 @@ public class GameManager {
             System.out.println("Writing Document...");
             // Create the document to eventually send to Redis.
             Document document = new Document()
-                    .append("uuid", gameUUID.toString())
+                    .append("nanoID", gameID.toString())
                     .append("arena", arena.fileName())
                     .append("kit", kit.id())
                     .append("gameType", gameType.toString())
@@ -155,8 +156,8 @@ public class GameManager {
             document.append("teams", teamsDocument);
 
             // Update Redis
-            JadedAPI.getRedis().set("duels:legacy:games:" + gameUUID, document.toJson());
-            JadedAPI.getRedis().publish("duels_legacy", "create " + gameUUID);
+            JadedAPI.getRedis().set("duels:legacy:games:" + gameID, document.toJson());
+            JadedAPI.getRedis().publish("duels_legacy", "create " + gameID);
         }).whenComplete((result, error) -> error.printStackTrace());
     }
 
@@ -180,7 +181,7 @@ public class GameManager {
      */
     public CompletableFuture<Game> fromDocument(Document document) {
         // Makes a copy of the arena.
-        CompletableFuture<World> worldCopy = JadedAPI.getPlugin().worldManager().copyWorld(document.getString("arena"), document.getString("uuid"));
+        CompletableFuture<World> worldCopy = JadedAPI.getPlugin().worldManager().copyWorld(document.getString("arena"), document.getString("nanoID"));
 
         // Creates a game using that info.
         return worldCopy.thenCompose(world -> CompletableFuture.supplyAsync(() -> {

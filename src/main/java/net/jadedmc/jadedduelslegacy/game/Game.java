@@ -19,6 +19,7 @@ import net.jadedmc.jadedduelslegacy.utils.GameUtils;
 import net.jadedmc.jadedutils.Timer;
 import net.jadedmc.jadedutils.chat.ChatUtils;
 import net.jadedmc.jadedutils.items.ItemBuilder;
+import net.jadedmc.nanoid.NanoID;
 import org.bson.Document;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -40,7 +41,7 @@ public class Game {
     // Important variables.
     private final Kit kit;
     private final Arena arena;
-    private final UUID uuid;
+    private final NanoID nanoID;
     private final GameType gameType;
     private Timer timer;
     private GameState gameState;
@@ -57,7 +58,7 @@ public class Game {
 
         this.kit = plugin.kitManager().kit(document.getString("kit"));
         this.arena = plugin.arenaManager().getArena(document.getString("arena"));
-        this.uuid = UUID.fromString(document.getString("uuid"));
+        this.nanoID = NanoID.fromString(document.getString("nanoID"));
         this.gameType = GameType.valueOf(document.getString("gameType"));
         this.timer = new Timer(plugin);
         this.pointsNeeded = document.getInteger("pointsNeeded");
@@ -100,7 +101,7 @@ public class Game {
         updateRedis();
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            JadedAPI.getRedis().publish("duels_legacy", "setup " + uuid);
+            JadedAPI.getRedis().publish("duels_legacy", "setup " + nanoID);
         });
     }
 
@@ -399,7 +400,7 @@ public class Game {
 
 
                 plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-                    JadedAPI.getRedis().del("duels:legacy:games:" + uuid);
+                    JadedAPI.getRedis().del("duels:legacy:games:" + nanoID);
                 });
 
                 for(Entity entity : world.getEntities()) {
@@ -772,7 +773,7 @@ public class Game {
             spectators.forEach(spectator -> jsonSpectators.add(spectator.toString()));
 
             Document document = new Document()
-                    .append("uuid", uuid.toString())
+                    .append("nanoID", nanoID.toString())
                     .append("kit", kit.id())
                     .append("arena", arena.fileName())
                     .append("type", gameType.toString())
@@ -815,7 +816,7 @@ public class Game {
             document.append("teams", teamsDocument);
 
             // Update to redis.
-            JadedAPI.getRedis().set("duels:legacy:games:" + uuid, document.toJson());
+            JadedAPI.getRedis().set("duels:legacy:games:" + nanoID, document.toJson());
         });
     }
 
@@ -827,8 +828,8 @@ public class Game {
         return world;
     }
 
-    public UUID uuid() {
-        return uuid;
+    public NanoID getNanoID() {
+        return nanoID;
     }
 
     public void addSpectator(UUID uuid) {

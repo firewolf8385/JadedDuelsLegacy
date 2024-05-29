@@ -12,6 +12,7 @@ import net.jadedmc.jadedduelslegacy.game.tournament.BestOf;
 import net.jadedmc.jadedduelslegacy.game.tournament.EliminationType;
 import net.jadedmc.jadedduelslegacy.game.tournament.TeamType;
 import net.jadedmc.jadedutils.chat.ChatUtils;
+import net.jadedmc.nanoid.NanoID;
 import org.bson.Document;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -101,11 +102,11 @@ public class RedisMessageListener implements Listener {
                 }
 
                 case "spectator" -> {
-                    UUID gameUUID = UUID.fromString(args[1]);
+                    NanoID gameID = NanoID.fromString(args[1]);
                     UUID spectatorUUID = UUID.fromString(args[2]);
 
                     for(Game game : plugin.gameManager().games()) {
-                        if(game.uuid().equals(gameUUID)) {
+                        if(game.getNanoID().equals(gameID)) {
                             game.addSpectator(spectatorUUID);
                             JadedAPI.sendToServer(spectatorUUID, JadedAPI.getCurrentInstance().getName());
                             break;
